@@ -11,8 +11,15 @@ commenter_shortcuts = {
         "פרי מגדים": "פרמג"
         }
 
-heading_formats = {}
+commenter_page_format = {
+        "default": "{commenter} על {section}",
+        "שערי תשובה": "שערי תשובה (מרגליות)/{\" \".join(section.split()[:-1])}/{section.split()[-1]}",
+        "כף החיים": "כף החיים/{\" \".join(section.split()[:-1])}/{section.split()[-1]}",
+        "באר הגולה": "באר הגולה (רבקש) על {section}"
+        }
 
-heading_formats["משנה ברורה"] = "(.*) (וכו')?"
-heading_formats["מגן אברהם"] = "(.*)"
-heading_formats["ביאור הלכה"] = "(.*)(וכו')?:"
+heading_formats = {
+        "משנה ברורה":  "(.*) (וכו')?",
+        "מגן אברהם": "(.*)",
+        "ביאור הלכה": "(.*)(וכו')?:"
+        }

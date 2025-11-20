@@ -75,18 +75,14 @@ def edit_completion_table(section_tuple):
                 completion_table.save("עדכון פרשן שהושלם")
                 return
 
-
 def construct_commenter(section, commenter):
     section = section[11:]
-    match commenter:
-        case "שערי תשובה":
-            return "שערי תשובה (מרגליות)/" + " ".join(section.split()[:-1]) + "/" + section.split()[-1]
-        case "כף החיים":
-            return "כף החיים/" + " ".join(section.split()[:-1]) + "/" + section.split()[-1]
-        case "באר הגולה":
-            return "באר הגולה (רבקש) על " + section
-        case _:
-            return commenter + " על " + section
+    page_format = commenter_page_format.get(commenter, commenter_page_format["default"])
+    namespace = {
+        "section": section,
+        "commenter": commenter,
+    }
+    return eval(f'f"{page_format}"', {"__builtins__": {}}, namespace) #disabling builtins and only allowing access to the required variables for security of eval
 
 def get_paragraphs(commenter_page):
     parsed_commenter = wtp.parse(commenter_page.text)
@@ -117,3 +113,5 @@ sections = ["אורח חיים", "יורה דעה", "אבן העזר", "חושן
 to_edit = []
 for section in sections:
     to_edit += parse_completion_table(section)
+
+print(construct_commenter("שולחן ערוך אורח חיים קמט", "שערי תשובה"))
