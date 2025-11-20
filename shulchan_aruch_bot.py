@@ -100,6 +100,7 @@ def edit_section(section_tuple: tuple):
     paragraphs = get_paragraphs(commenter_page)
     refs = [(paragraph[1], f"{{{{פרשע1|{commenter_shortcuts[commenter]}|{paragraph[0]}}}}}") for paragraph in paragraphs]
     for ref in refs:
+        if section_page.text.find(ref[1]): continue # if the reference is already found in the page, don't re-add it
         heading = re.search(heading_formats[commenter], ref[0]).group(1)
         insert_pos = re.search(heading, section_page.text)
         if insert_pos:
@@ -114,4 +115,6 @@ to_edit = []
 for section in sections:
     to_edit += parse_completion_table(section)
 
-print(construct_commenter("שולחן ערוך אורח חיים קמט", "שערי תשובה"))
+for section in_to edit:
+    edit_section(section)
+    edit_completion_table(section)
