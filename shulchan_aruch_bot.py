@@ -26,29 +26,29 @@ def parse_completion_table(section):
                     to_edit.append((section, title_row[i]))
     return to_edit
 
-def create_completion_table(data):
-    table = """{| class="wikitable"
-! הסעיף
-! ט"ז
-! מגן אברהם
-! באר היטב
-! שערי תשובה
-! משנה ברורה
-! ביאור הלכה
-! כף החיים
-! באר הגולה
-"""
-    for row in data:
-        table += f"|-\n| "
-        for cell in row[:-1]:
-            table += cell
-            if cell != "": table += " "
-            table += "|| "
-        if row[-1] == "": table = table[:-1]
-        table += row[-1]
-        table += "\n"
-    table += "|}"
-    return table
+# def create_completion_table(data):
+#     table = """{| class="wikitable"
+# ! הסעיף
+# ! ט"ז
+# ! מגן אברהם
+# ! באר היטב
+# ! שערי תשובה
+# ! משנה ברורה
+# ! ביאור הלכה
+# ! כף החיים
+# ! באר הגולה
+# """
+#     for row in data:
+#         table += f"|-\n| "
+#         for cell in row[:-1]:
+#             table += cell
+#             if cell != "": table += " "
+#             table += "|| "
+#         if row[-1] == "": table = table[:-1]
+#         table += row[-1]
+#         table += "\n"
+#     table += "|}"
+#     return table
 
 def create_row(data):
     row = "| "
