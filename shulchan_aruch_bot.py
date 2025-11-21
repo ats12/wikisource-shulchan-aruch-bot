@@ -1,5 +1,4 @@
 import pywikibot
-from pywikibot import add_text
 import wikitextparser as wtp
 import re
 import sys # for printing to stderr
@@ -76,7 +75,7 @@ def update_completion_table(sections, mark):
     section = " ".join(sections[0][0].split()[2:5])
     completion_table = get_completion_table(" ".join(section.split()[:-1]))
     for section in sections:
-        completion_table.text = edit_completion_table(section, completion_table.text)
+        completion_table.text = edit_completion_table(section, completion_table.text, mark)
     completion_table.save("עדכון פרשן שהושלם")
 
 def construct_commenter(section, commenter):
@@ -89,8 +88,8 @@ def construct_commenter(section, commenter):
     return eval(f'f"{page_format}"', {"__builtins__": {}}, namespace) #disabling builtins and only allowing access to the required variables for security of eval
 
 def get_paragraphs(commenter_page):
-    parsed_commenter = wtp.parse(commenter_page.text)
-    paragraphs = [(template.get_arg("2"), template.get_arg("3").value) for template in parsed_commenter.templates if template.normal_name() == "משע"]
+    templates = re.finditer(r"\{\{משע\|.*\|(.*)\|(.*)\}\}", commenter_page.text)
+    paragraphs = [template.group(1, 2) for template in templates]
     return paragraphs
 
 def edit_section(section_tuple: tuple):
@@ -106,8 +105,13 @@ def edit_section(section_tuple: tuple):
     if not refs: return -2
     not_done = []
     for ref in refs:
-        if section_page.text.find(ref[1]): continue # if the reference is already found in the page, don't re-add it
-        heading = re.search(heading_formats[commenter], ref[0]).group(1)
+        if section_page.text.find(ref[1]) != -1: continue # if the reference is already found in the page, don't re-add it
+        if commenter in heading_formats.keys():
+            heading = re.search(heading_formats[commenter], ref[0])
+            if heading: heading = heading.group(1)
+            else: continue
+        else:
+            return -5
         insert_pos = re.search(heading, section_page.text)
         if insert_pos:
             insert_pos = insert_pos.start()
@@ -134,10 +138,7 @@ for section in sections:
 done = []
 partially_done = []
 for section in to_edit:
-    try:
-        edit_status = edit_section(section)
-    except Exception as error:
-            print(error)
+    edit_status = edit_section(section)
 
     match edit_status:
         case -1:
@@ -149,10 +150,13 @@ for section in to_edit:
         case -4:
             partially_done.append(section)
             print(f"הפניות ל{section[1]} נוספו בהצלחה חלקית ל{section[0]}")
+            break
+        case -5:
+            print(f"אין תבנית מתאימה לדיבור המתחיל של {section[1]}")
         case True:
             done.append(section)
             print(f"הפניות ל{section[1]} נוספו בהצלחה ל{section[0]}")
             break
 
 update_completion_table(done, "{{v}}")
-update_completion_table(partially_done, "{{v}}{{הערה|שם=השלמה חלקית בוט}}")
+if partially_done: update_completion_table(partially_done, "{{v}}{{הערה|שם=השלמה חלקית בוט}}")
