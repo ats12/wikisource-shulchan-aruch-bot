@@ -59,23 +59,23 @@ def create_row(data):
     row += data[-1]
     return row
 
-def edit_completion_table(section_tuple, table_text, mark):
+def edit_completion_table(section, commenter, table_text, mark):
     parsed = wtp.parse(table_text)
     title_row = parsed.tables[0].data(row=0)
     for table in parsed.tables:
         table_data = table.data()[1:]
         for i, row in enumerate(table_data):
-            if row[0][2:-2] == section_tuple[0]:
+            if row[0][2:-2] == section:
                 new_row = row.copy()
-                new_row[title_row.index(section_tuple[1])] = mark
+                new_row[title_row.index(commenter)] = mark
                 table_text = table_text.replace(create_row(row), create_row(new_row))
                 return table_text
 
 def update_completion_table(sections, mark):
     section = " ".join(sections[0][0].split()[2:5])
     completion_table = get_completion_table(" ".join(section.split()[:-1]))
-    for section in sections:
-        completion_table.text = edit_completion_table(section, completion_table.text, mark)
+    for section, commenter in sections:
+        completion_table.text = edit_completion_table(section, commenter, completion_table.text, mark)
     completion_table.save("עדכון פרשן שהושלם")
 
 def construct_commenter(section, commenter):
@@ -92,11 +92,9 @@ def get_paragraphs(commenter_page):
     paragraphs = [template.group(1, 2) for template in templates]
     return paragraphs
 
-def edit_section(section_tuple: tuple):
+def edit_section(section, commenter):
     global site
     global commenter_shortcuts
-    section = section_tuple[0]
-    commenter = section_tuple[1]
     section_page = pywikibot.Page(site, section)
     commenter_page = pywikibot.Page(site, construct_commenter(section, commenter))
     if not commenter_page.exists(): return -1
@@ -121,7 +119,7 @@ def edit_section(section_tuple: tuple):
     if not_done == refs: return -3
     if not_done:
         message = f"\n=== הוספת הפניות ל{commenter} ===\nהוספו הפניות ל{commenter} באמצעות בוט. הסעיפים הקטנים הבאים לא הושלמו: {", ".join(not_done)}. ~~~~"
-        section_page.save(f"הוספת הפניות חלקית, ראו פרטים נוספים בדף השיחה")
+        section_page.save(f"הוספת הפניות חלקית, ראו פרטים נוספים בדף השיחה.")
         discussion_page = pywikibot.Page(site, "שיחה:" + section)
         discussion_page.text += message
         discussion_page.save()
@@ -137,8 +135,8 @@ for section in sections:
 
 done = []
 partially_done = []
-for section in to_edit:
-    edit_status = edit_section(section)
+for section, commenter in to_edit:
+    edit_status = edit_section(section, commenter)
 
     match edit_status:
         case -1:
