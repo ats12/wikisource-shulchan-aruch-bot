@@ -103,6 +103,7 @@ def edit_section(section, commenter):
     if not refs: return -2
     not_done = []
     for ref in refs:
+        print("הפניה להוספה: ", ref)
         if section_page.text.find(ref[1]) != -1: continue # if the reference is already found in the page, don't re-add it
         if commenter in heading_formats.keys():
             heading = re.search(heading_formats[commenter], ref[0])
@@ -111,6 +112,7 @@ def edit_section(section, commenter):
         else:
             return -5
         insert_pos = re.search(heading, section_page.text)
+        print("נקודת הכנסה: ", insert_pos)
         if insert_pos:
             insert_pos = insert_pos.start()
         else:
@@ -140,20 +142,20 @@ for section, commenter in to_edit:
 
     match edit_status:
         case -1:
-            print(f"דף המפרש {construct_commenter(section[0], section[1])} אינו קיים", file=sys.stderr)
+            print(f"דף המפרש {construct_commenter(section, commenter)} אינו קיים", file=sys.stderr)
         case -2:
-            print(f"לא נמצאו תבניות {{{{משע}}}} בדף המפרש {construct_commenter(section[0], section[1])}", file=sys.stderr)
+            print(f"לא נמצאו תבניות {{{{משע}}}} בדף המפרש {construct_commenter(section, commenter)}", file=sys.stderr)
         case -3:
-            print(f"הבוט לא הצליח לזהות את הדיבורים המתחילים של {section[1]} ב{section[0]}")
+            print(f"הבוט לא הצליח לזהות את הדיבורים המתחילים של {commenter} ב{section}")
         case -4:
             partially_done.append(section)
-            print(f"הפניות ל{section[1]} נוספו בהצלחה חלקית ל{section[0]}")
+            print(f"הפניות ל{commenter} נוספו בהצלחה חלקית ל{section}")
             break
         case -5:
-            print(f"אין תבנית מתאימה לדיבור המתחיל של {section[1]}")
+            print(f"אין תבנית מתאימה לדיבור המתחיל של {commenter}")
         case True:
             done.append(section)
-            print(f"הפניות ל{section[1]} נוספו בהצלחה ל{section[0]}")
+            print(f"הפניות ל{commenter} נוספו בהצלחה ל{section}")
             break
 
 update_completion_table(done, "{{v}}")
