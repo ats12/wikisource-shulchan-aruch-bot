@@ -88,7 +88,7 @@ def construct_commenter(section, commenter):
     return eval(f'f"{page_format}"', {"__builtins__": {}}, namespace) #disabling builtins and only allowing access to the required variables for security of eval
 
 def get_paragraphs(commenter_page):
-    templates = re.finditer(r"\{\{משע\|.*\|(.*)\|(.*)\}\}", commenter_page.text)
+    templates = re.finditer(r"\{\{משע\|.*?\|(.*?)\|(.*?)\}\}", commenter_page.text)
     paragraphs = [template.group(1, 2) for template in templates]
     return paragraphs
 
@@ -99,26 +99,35 @@ def edit_section(section, commenter):
     commenter_page = pywikibot.Page(site, construct_commenter(section, commenter))
     if not commenter_page.exists(): return -1
     paragraphs = get_paragraphs(commenter_page)
-    refs = [(paragraph[1], f"{{{{פרשע1|{commenter_shortcuts[commenter]}|{paragraph[0]}}}}}") for paragraph in paragraphs]
+    refs = [(paragraph[1], f"{{{{פרשע1|{commenter_shortcuts[commenter]}|{paragraph[0]}}}}}", paragraph[0]) for paragraph in paragraphs]
     if not refs: return -2
     not_done = []
-    for ref in refs:
+    with open("text.orig", "w") as f:
+        f.write(section_page.text)
+    for heading, ref, letter in refs:
         print("הפניה להוספה: ", ref)
-        if section_page.text.find(ref[1]) != -1: continue # if the reference is already found in the page, don't re-add it
+        if ref in section_page.text:
+            print("ההפניה כבר קיימת.")
+            continue # if the reference is already found in the page, don't re-add it
         if commenter in heading_formats.keys():
-            heading = re.search(heading_formats[commenter], ref[0])
+            heading = re.search(heading_formats[commenter], heading)
             if heading: heading = heading.group(1)
             else: continue
         else:
             return -5
+        print(f"ד\"ה: {heading}")
         insert_pos = re.search(heading, section_page.text)
-        print("נקודת הכנסה: ", insert_pos)
         if insert_pos:
             insert_pos = insert_pos.start()
+            print("נקודת הכנסה: ", insert_pos)
         else:
-            not_done.append(ref[0])
-        section_page.text = section_page.text[:insert_pos] + ref[1] + section_page.text[insert_pos:]
-    if not_done == refs: return -3
+            print(f"ד\"ה {heading} לא נמצא בסימן.")
+            not_done.append(letter)
+            continue
+        section_page.text = section_page.text[:insert_pos] + ref + section_page.text[insert_pos:]
+    with open("text.mod", "w") as f:
+        f.write(section_page.text)
+    if not_done == [ref[2] for ref in refs]: return -3
     if not_done:
         message = f"\n=== הוספת הפניות ל{commenter} ===\nהוספו הפניות ל{commenter} באמצעות בוט. הסעיפים הקטנים הבאים לא הושלמו: {", ".join(not_done)}. ~~~~"
         section_page.save(f"הוספת הפניות חלקית, ראו פרטים נוספים בדף השיחה.")
@@ -138,6 +147,7 @@ for section in sections:
 done = []
 partially_done = []
 for section, commenter in to_edit:
+    print(section)
     edit_status = edit_section(section, commenter)
 
     match edit_status:
@@ -148,15 +158,14 @@ for section, commenter in to_edit:
         case -3:
             print(f"הבוט לא הצליח לזהות את הדיבורים המתחילים של {commenter} ב{section}")
         case -4:
-            partially_done.append(section)
+            partially_done.append((section, commenter))
             print(f"הפניות ל{commenter} נוספו בהצלחה חלקית ל{section}")
-            break
         case -5:
             print(f"אין תבנית מתאימה לדיבור המתחיל של {commenter}")
         case True:
-            done.append(section)
+            done.append((section, commenter))
             print(f"הפניות ל{commenter} נוספו בהצלחה ל{section}")
-            break
+    if len(done) + len(partially_done) == 10: break
 
 update_completion_table(done, "{{v}}")
 if partially_done: update_completion_table(partially_done, "{{v}}{{הערה|שם=השלמה חלקית בוט}}")
