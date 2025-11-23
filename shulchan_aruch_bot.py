@@ -71,11 +71,20 @@ def edit_completion_table(section, commenter, table_text, mark):
                 table_text = table_text.replace(create_row(row), create_row(new_row))
                 return table_text
 
-def update_completion_table(sections, mark):
+def update_completion_table(sections, kind):
     section = " ".join(sections[0][0].split()[2:5])
+    match kind:
+        case 1:
+            mark = "{{v}}"
+        case 2:
+            mark = "{{v}}{{הערה|שם=השלמה חלקית בוט}}"
     completion_table = get_completion_table(" ".join(section.split()[:-1]))
     for section, commenter in sections:
         completion_table.text = edit_completion_table(section, commenter, completion_table.text, mark)
+    if kind == 2:
+        comment = "{{הערות שוליים|הערות={{הערה|שם=השלמה חלקית בוט|הושלם באופן חלקי על ידי בוט, לפרטים נוספים ראו את דף השיחה של הסימן}}}}" 
+        if comment not in completion_table.text:
+            completion_table.text += comment
     completion_table.save("עדכון פרשן שהושלם")
 
 def construct_commenter(section, commenter):
@@ -169,5 +178,6 @@ for section, commenter in to_edit:
             print(f"הפניות ל{commenter} נוספו בהצלחה ל{section}")
     if len(done) + len(partially_done) == 10: break
 
-update_completion_table(done, "{{v}}")
-if partially_done: update_completion_table(partially_done, "{{v}}{{הערה|שם=השלמה חלקית בוט}}")
+update_completion_table(done, 1)
+if partially_done:
+    update_completion_table(partially_done, 2)
