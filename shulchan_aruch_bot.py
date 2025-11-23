@@ -82,7 +82,7 @@ def update_completion_table(sections, kind):
     for section, commenter in sections:
         completion_table.text = edit_completion_table(section, commenter, completion_table.text, mark)
     if kind == 2:
-        comment = "{{הערות שוליים|הערות={{הערה|שם=השלמה חלקית בוט|הושלם באופן חלקי על ידי בוט, לפרטים נוספים ראו את דף השיחה של הסימן}}}}" 
+        comment = "{{הערות שוליים|הערות={{הערה|שם=השלמה חלקית בוט|הושלם באופן חלקי על ידי בוט, לפרטים נוספים ראו את דף השיחה של הסימן.}}}}" 
         if comment not in completion_table.text:
             completion_table.text += comment
     completion_table.save("עדכון פרשן שהושלם")
@@ -111,8 +111,8 @@ def edit_section(section, commenter):
     refs = [(paragraph[1], f"{{{{פרשע1|{commenter_shortcuts[commenter]}|{paragraph[0]}}}}}", paragraph[0]) for paragraph in paragraphs]
     if not refs: return -2
     not_done = []
-    # with open("text.orig", "w") as f:
-    #     f.write(section_page.text)
+    with open("text.orig", "w") as f:
+        f.write(section_page.text)
     current_pos = 0
     for heading, ref, letter in refs:
         print("הפניה להוספה: ", ref)
@@ -128,7 +128,7 @@ def edit_section(section, commenter):
         print(f"ד\"ה: {heading}")
         insert_pos = re.search(heading, section_page.text[current_pos:])
         if insert_pos:
-            insert_pos = insert_pos.start()
+            insert_pos = current_pos + insert_pos.start()
             print("נקודת הכנסה: ", insert_pos)
         else:
             print(f"ד\"ה {heading} לא נמצא בסימן.")
@@ -136,12 +136,12 @@ def edit_section(section, commenter):
             continue
         current_pos = insert_pos
         section_page.text = section_page.text[:insert_pos] + ref + section_page.text[insert_pos:]
-    # with open("text.mod", "w") as f:
-    #     f.write(section_page.text)
+    with open("text.mod", "w") as f:
+        f.write(section_page.text)
     if not_done == [ref[2] for ref in refs]: return -3
     if not_done:
         message = f"\n=== הוספת הפניות ל{commenter} ===\nהוספו הפניות ל{commenter} באמצעות בוט. הסעיפים הקטנים הבאים לא הושלמו: {", ".join(not_done)}. ~~~~"
-        section_page.save(f"הוספת הפניות חלקית, ראו פרטים נוספים בדף השיחה.")
+        section_page.save(f"הוספת הפניות חלקית ל{commenter}, ראו פרטים נוספים בדף השיחה.")
         discussion_page = pywikibot.Page(site, "שיחה:" + section)
         discussion_page.text += message
         discussion_page.save()
@@ -178,6 +178,7 @@ for section, commenter in to_edit:
             print(f"הפניות ל{commenter} נוספו בהצלחה ל{section}")
     if len(done) + len(partially_done) == 10: break
 
-update_completion_table(done, 1)
+if done:
+    update_completion_table(done, 1)
 if partially_done:
     update_completion_table(partially_done, 2)
