@@ -85,7 +85,9 @@ def update_completion_table(sections, kind):
         comment = "{{הערות שוליים|הערות={{הערה|שם=השלמה חלקית בוט|הושלם באופן חלקי על ידי בוט, לפרטים נוספים ראו את דף השיחה של הסימן.}}}}" 
         if comment not in completion_table.text:
             completion_table.text += comment
-    completion_table.save("עדכון פרשן שהושלם")
+        completion_table.save(f"עדכון השלמה חלקית של {commenter} {section.split()[-1]}")
+        return
+    completion_table.save(f"עדכון השלמת {commenter} {section.split()[-1]}")
 
 def construct_commenter(section, commenter):
     section = section[11:]
@@ -113,14 +115,14 @@ def edit_section(section, commenter):
     not_done = []
     with open("text.orig", "w") as f:
         f.write(section_page.text)
-    current_pos = 0
+    current_pos = section_page.find("}}") # so no references are entered inside the title
     for heading, ref, letter in refs:
         print("הפניה להוספה: ", ref)
         if ref in section_page.text:
             print("ההפניה כבר קיימת.")
             continue # if the reference is already found in the page, don't re-add it
         if commenter in heading_formats.keys():
-            heading = re.search(heading_formats[commenter], heading)
+            heading = re.search(heading_formats[commenter], heading) # so no references are entered inside the title
             if heading: heading = heading.group(1)
             else: continue
         else:
@@ -140,11 +142,13 @@ def edit_section(section, commenter):
         f.write(section_page.text)
     if not_done == [ref[2] for ref in refs]: return -3
     if not_done:
-        message = f"\n=== הוספת הפניות ל{commenter} ===\nהוספו הפניות ל{commenter} באמצעות בוט. הסעיפים הקטנים הבאים לא הושלמו: {", ".join(not_done)}. ~~~~"
+        # message = f"\n=== הוספת הפניות ל{commenter} ===\nהוספו הפניות ל{commenter} באמצעות בוט. הסעיפים הקטנים הבאים לא הושלמו: {", ".join(not_done)}. ~~~~"
         section_page.save(f"הוספת הפניות חלקית ל{commenter}, ראו פרטים נוספים בדף השיחה.")
-        discussion_page = pywikibot.Page(site, "שיחה:" + section)
-        discussion_page.text += message
-        discussion_page.save()
+        with open("not_done.log", a) as f:
+            f.write(f"{commenter} {section.split()[-2:]}: {\", \".join(not_done)}"
+        # discussion_page = pywikibot.Page(site, "שיחה:" + section)
+        # discussion_page.text += message
+        # discussion_page.save()
         return -4
     section_page.save(f"הוספת הפניות ל{commenter}.")
     return True
