@@ -2,6 +2,7 @@ import pywikibot
 import wikitextparser as wtp
 import re
 import sys # for printing to stderr
+import csv
 from conversion_data import *
 site = pywikibot.Site("he", "wikisource")
 
@@ -25,6 +26,7 @@ def parse_completion_table(section):
                     to_edit.append((section, title_row[i]))
     return to_edit
 
+# unneeded function left for reference
 # def create_completion_table(data):
 #     table = """{| class="wikitable"
 # ! הסעיף
@@ -103,14 +105,18 @@ def get_paragraphs(commenter_page):
     paragraphs = [template.group(1, 2) for template in templates]
     return paragraphs
 
-def edit_section(section, commenter):
+def construct_references(section, commenter):
     global site
     global commenter_shortcuts
     section_page = pywikibot.Page(site, section)
     commenter_page = pywikibot.Page(site, construct_commenter(section, commenter))
-    if not commenter_page.exists(): return -1
+    if not commenter_page.exists(): return None
     paragraphs = get_paragraphs(commenter_page)
     refs = [(paragraph[1], f"{{{{פרשע1|{commenter_shortcuts[commenter]}|{paragraph[0]}}}}}", paragraph[0]) for paragraph in paragraphs]
+    return refs
+
+def edit_section(section, commenter):
+    refs = construct_references(section, commenter)
     if not refs: return -2
     not_done = []
     with open("text.orig", "w") as f:
@@ -130,7 +136,7 @@ def edit_section(section, commenter):
         print(f"ד\"ה: {heading}")
         insert_pos = re.search(heading, section_page.text[current_pos:])
         if insert_pos:
-            insert_pos = current_pos + insert_pos.start()
+            insert_pos = current_pos + insert_pos.start() # to insert references in order
             print("נקודת הכנסה: ", insert_pos)
         else:
             print(f"ד\"ה {heading} לא נמצא בסימן.")
@@ -145,7 +151,7 @@ def edit_section(section, commenter):
         # message = f"\n=== הוספת הפניות ל{commenter} ===\nהוספו הפניות ל{commenter} באמצעות בוט. הסעיפים הקטנים הבאים לא הושלמו: {", ".join(not_done)}. ~~~~"
         section_page.save(f"הוספת הפניות חלקית ל{commenter}, ראו פרטים נוספים בדף השיחה.")
         with open("not_done.log", a) as f:
-            f.write(f"{commenter} {section.split()[-2:]}: {\", \".join(not_done)}"
+            f.write(f"{commenter} {section.split()[-2:]}: {", ".join(not_done)}")
         # discussion_page = pywikibot.Page(site, "שיחה:" + section)
         # discussion_page.text += message
         # discussion_page.save()
@@ -153,36 +159,48 @@ def edit_section(section, commenter):
     section_page.save(f"הוספת הפניות ל{commenter}.")
     return True
 
-
+# creating the list of sections and commenters references should be added to
 sections = ["אורח חיים", "יורה דעה", "אבן העזר", "חושן משפט"]
 to_edit = []
 for section in sections:
     to_edit += parse_completion_table(section)
 
-done = []
-partially_done = []
+# creating a table of the references to be added
+ref_file = open("references.csv", "w")
+writer = csv.writer(ref_file)
 for section, commenter in to_edit:
-    print(section)
-    edit_status = edit_section(section, commenter)
+    refs = construct_references(section, commenter)
+    if refs:
+        rows = [(section, commenter, heading, ref, letter) for heading, ref, letter in refs]
+        writer.writerows(rows)
 
-    match edit_status:
-        case -1:
-            print(f"דף המפרש {construct_commenter(section, commenter)} אינו קיים", file=sys.stderr)
-        case -2:
-            print(f"לא נמצאו תבניות {{{{משע}}}} בדף המפרש {construct_commenter(section, commenter)}", file=sys.stderr)
-        case -3:
-            print(f"הבוט לא הצליח לזהות את הדיבורים המתחילים של {commenter} ב{section}")
-        case -4:
-            partially_done.append((section, commenter))
-            print(f"הפניות ל{commenter} נוספו בהצלחה חלקית ל{section}")
-        case -5:
-            print(f"אין תבנית מתאימה לדיבור המתחיל של {commenter}")
-        case True:
-            done.append((section, commenter))
-            print(f"הפניות ל{commenter} נוספו בהצלחה ל{section}")
-    if len(done) + len(partially_done) == 10: break
+close(ref_file)
 
-if done:
-    update_completion_table(done, 1)
-if partially_done:
-    update_completion_table(partially_done, 2)
+#the editing code, currently commented out so no accidents could happen
+# done = []
+# partially_done = []
+# for section, commenter in to_edit:
+#     print(section)
+#     edit_status = edit_section(section, commenter)
+#
+#     match edit_status:
+#         case -1:
+#             print(f"דף המפרש {construct_commenter(section, commenter)} אינו קיים", file=sys.stderr)
+#         case -2:
+#             print(f"לא נמצאו תבניות {{{{משע}}}} בדף המפרש {construct_commenter(section, commenter)}", file=sys.stderr)
+#         case -3:
+#             print(f"הבוט לא הצליח לזהות את הדיבורים המתחילים של {commenter} ב{section}")
+#         case -4:
+#             partially_done.append((section, commenter))
+#             print(f"הפניות ל{commenter} נוספו בהצלחה חלקית ל{section}")
+#         case -5:
+#             print(f"אין תבנית מתאימה לדיבור המתחיל של {commenter}")
+#         case True:
+#             done.append((section, commenter))
+#             print(f"הפניות ל{commenter} נוספו בהצלחה ל{section}")
+#     if len(done) + len(partially_done) == 10: break
+#
+# if done:
+#     update_completion_table(done, 1)
+# if partially_done:
+#     update_completion_table(partially_done, 2)
